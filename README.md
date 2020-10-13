@@ -8,7 +8,11 @@ appropriately named directories (as required by GDEMU) and generates a GDMenu
 ISO disc with a pre-generated list of menu entries, which avoids scanning the SD
 card every time GDMenu is launched.
 
-Requirements:
+**This script comes with no warranty of any kind, use at your own risk.**
+
+
+Requirements
+============
 
   * `genisoimage`
   * `hexdump`
@@ -17,9 +21,10 @@ Requirements:
   * `cdi4dc`
   * Python (to run `gditools.py` and `iso9660.py`)
 
-TODO: `cdi4dc`?  https://github.com/Kazade/img4dc
+**A note on `cdi4ds`**
 
-**This script comes with no warranty of any kind, use at your own risk.**
+TODO: document `cdi4dc`  https://github.com/Kazade/img4dc
+TODO: move tools and data files to subdirectories
 
 
 Usage
@@ -47,22 +52,24 @@ https://mc.pp.se/dc/ip0000.bin.html
 Bundled software, credits, and licenses
 =======================================
 
-`dc-card-maker.sh` is distributed under the terms of GPL3 license -- see
-`LICENSE-GPL3` file.
+`dc-card-maker.sh` is distributed under the terms of GPL2 license -- see
+`licenses/LICENSE-dc-card-maker-script` file.
 
 This repo also contains the following additional software written by other
 people:
 
   * `1ST_READ.BIN` contains a binary image of GDMenu written by neuroacid.
-    License unknown, but this binary is freely distributed on the internet.  See
-    `gdmenu-readme.txt`
+    Exact license unknown, but this binary has been released to the public by
+    the author and is freely distributed on the internet.  See
+    `README-gdmenu.txt` for details.
 
   * `iso9660.py` was written by Barney Gale and is distributed under the terms
-    of BSD license -- see `LICENSE-BSD`.  Original repository:
-    [https://github.com/barneygale/iso9660]
+    of MIT license -- see `licenses/LICENSE-iso9660`.  Original repository:
+    https://github.com/barneygale/iso9660
 
-  * `gditools.py` was written by FamilyGuy and is distributed under the terms of
-    GPL3 license -- see `LICENSE-GPL3` file.  Original repository:
-    [https://sourceforge.net/projects/dcisotools/]
+  * `gditools.py` is taken from `gditools` library written by FamilyGuy, and is
+    distributed under the terms of GPL3 license -- see
+    `licenses/LICENSE-gditools` file.  Original repository:
+    https://sourceforge.net/projects/dcisotools/
 
   * `ip.bin` is taken from GDEMU_SD written by MadSheep
