@@ -1,0 +1,10 @@
+# Various build artifacts and temporary files
+*.pyc
+LIST.INI
+gdmenu.cdi
+gdmenu.iso
+
+# Test files and directories
+list.txt
+in/*
+out/*
