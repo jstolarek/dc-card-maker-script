@@ -2,15 +2,14 @@
 
 # Usage:
 #
-# dc-card-maker.sh game_list.txt source_dir target_dir
+#   dc-card-maker.sh game_list.txt source_dir target_dir
+#
+# See README.md for detailed instructions
 #
 # (c) Jan Stolarek 2020, GPL3 License
 
-STARTRED="\e[31m"
-ENDCOLOR="\e[0m"
-
 if [ "$#" != 3 ]; then
-    echo "Dreamcast SD card maker script 1.0 by Jan Stolarek, 10 October 2020"
+    echo "Dreamcast SD card maker script"
     echo ""
     echo "Usage: dc-card-maker.sh game_list.txt source_dir target_dir"
     exit 1;
@@ -22,6 +21,9 @@ TARGET_DIR=$3
 OUTPUT_FILE=$3/game_list.txt
 GDMENU_INI=LIST.INI
 NAME_FILE=archive.txt
+# For error printing in red
+STARTRED="\e[31m"
+ENDCOLOR="\e[0m"
 
 # Basic sanity checks
 if [[ ! -f $INPUT_FILE ]]; then
@@ -70,18 +72,16 @@ fi
 # Initialize GDMenu ini file.
 if [[ -e $GDMENU_INI ]]; then
     echo "$GDMENU_INI exists, backing up as ${GDMENU_INI}.bak"
-    mv "$GDMENU_INI" "$GDMENU_INI".bak
+    mv "$GDMENU_INI" "$GDMENU_INI"".bak"
 fi
-
-touch $GDMENU_INI
-echo "[GDMENU]" >> $GDMENU_INI
-echo "01.name=GDMENU" >> $GDMENU_INI
-echo "01.disc=1/1" >> $GDMENU_INI
-echo "01.vga=1" >> $GDMENU_INI # differs from ip.bin !
-echo "01.region=JUE" >> $GDMENU_INI
+echo "[GDMENU]"          >> $GDMENU_INI
+echo "01.name=GDMENU"    >> $GDMENU_INI
+echo "01.disc=1/1"       >> $GDMENU_INI
+echo "01.vga=1"          >> $GDMENU_INI # differs from ip.bin !
+echo "01.region=JUE"     >> $GDMENU_INI
 echo "01.version=V0.6.0" >> $GDMENU_INI
-echo "01.date=20160812" >> $GDMENU_INI
-echo "" >> $GDMENU_INI
+echo "01.date=20160812"  >> $GDMENU_INI
+echo ""                  >> $GDMENU_INI
 
 # Directory 01 reserved for GDMenu, start with 02
 INDEX=2
@@ -97,7 +97,7 @@ while read GAME; do
     fi
 
     # Attempt to locate the game subdirectory in the target directory.  If it's
-    # already there don't copy it again
+    # already there just restory, don't attempt to extract it from an archive
     GAME_FOUND=false
     for EXISTING_GAME_DIR in `find $TARGET_DIR -regextype sed -regex "$TARGET_DIR/*[0-9][0-9]*_"`; do
         if [[ "$GAME" == "`cat $EXISTING_GAME_DIR/$NAME_FILE`" ]]; then
@@ -106,15 +106,16 @@ while read GAME; do
             (( INDEX++ ))
             echo "$GAME" >> "$OUTPUT_FILE"
             GAME_FOUND=true
-            break # don't iterate over remaining directories
+            break # if found don't iterate over remaining directories
         fi
     done
 
-    # If game not found on card extract if from zip archive
+    # If game not found on card extract it from zip archive
     if [[ $GAME_FOUND == false ]]; then
         GAME_ARCHIVE="$SOURCE_DIR/$GAME"
         GAME_TARGET_DIR="$TARGET_DIR/$DIR_NAME"
 
+        # Missing archives are not considered fatal, just skip the game
         if [[ ! -f "$GAME_ARCHIVE" ]]; then
             echo -e "$STARTRED""Game archive not found: \"$GAME_ARCHIVE\", skipping""$ENDRED"
             break
@@ -123,6 +124,7 @@ while read GAME; do
         echo "Extracting archive $GAME_ARCHIVE"
         unzip "$GAME_ARCHIVE" -d "$DIR_NAME"
 
+        # Extracting errors are fatal - stop the script
         if [[ $? -ne 0 ]]; then
             echo -e "$STARTRED""Error extracting archive: $GAME_ARCHIVE""$ENDRED"
             echo -e "$STARTRED""Aborting script""$ENDRED"
@@ -143,7 +145,9 @@ while read GAME; do
         echo "$GAME" >> "$OUTPUT_FILE"
     fi
 
-    # extract the boot file from gdi image and use it to create GDMenu entry
+    # Now that the image files are in the target directory let's create a
+    # GDMenu.  Necessary information is taken from ip.bin file extracted from
+    # the gdi image
     ./gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
     NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
     DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
@@ -153,25 +157,26 @@ while read GAME; do
     DATE_INFO=`hexdump -v -e '"%c"' -s0x50 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin`
     rm $TARGET_DIR/$DIR_NAME/ip.bin
 
-    echo "$DIR_NAME.name=$NAME_INFO" >> $GDMENU_INI
-    echo "$DIR_NAME.disc=$DISC_INFO" >> $GDMENU_INI
-    echo "$DIR_NAME.vga=$VGA_INFO" >> $GDMENU_INI
-    echo "$DIR_NAME.region=$REGION_INFO" >> $GDMENU_INI
+    echo "$DIR_NAME.name=$NAME_INFO"       >> $GDMENU_INI
+    echo "$DIR_NAME.disc=$DISC_INFO"       >> $GDMENU_INI
+    echo "$DIR_NAME.vga=$VGA_INFO"         >> $GDMENU_INI
+    echo "$DIR_NAME.region=$REGION_INFO"   >> $GDMENU_INI
     echo "$DIR_NAME.version=$VERSION_INFO" >> $GDMENU_INI
-    echo "$DIR_NAME.date=$DATE_INFO" >> $GDMENU_INI
-    echo "" >> $GDMENU_INI
+    echo "$DIR_NAME.date=$DATE_INFO"       >> $GDMENU_INI
+    echo ""                                >> $GDMENU_INI
 
 done < "$INPUT_FILE"
 
-# Build GDMenu iso image and put it in 01 directory
+# Build GDMenu cdi image and put it in 01 directory
 genisoimage -C 0,11702 -V GDMENU -G ip.bin -r -J -l -input-charset iso8859-1 -o gdmenu.iso 1ST_READ.BIN $GDMENU_INI
 mkdir "$TARGET_DIR/01"
 mv gdmenu.iso "$TARGET_DIR/01"
 
-# Default GDMenu configuration
+# Copy default GDMenu configuration
 cp GDEMU.ini "$TARGET_DIR"
 
-# Report any leftover dirs to the user
+# Report any leftover dirs to the user.  Re-running the script won't be possible
+# if these exist.
 LEFTOVER_DIRS=`find $TARGET_DIR -regextype sed -regex "$TARGET_DIR/*[0-9][0-9]*_"`
 if [[ ! -z $LEFTOVER_DIRS ]]; then
     echo -e "$STARTRED""Following directories at target directory contain old games""$ENDRED"
