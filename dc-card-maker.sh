@@ -119,6 +119,13 @@ echo "01.version=V0.6.0" >> $GDMENU_INI
 echo "01.date=20160812"  >> $GDMENU_INI
 echo ""                  >> $GDMENU_INI
 
+# Initialize output game list file.
+if [[ -e $OUTPUT_FILE ]]; then
+    echo "$OUTPUT_FILE exists, backing up as ${OUTPUT_FILE}.bak"
+    mv "$OUTPUT_FILE" "$OUTPUT_FILE"".bak"
+fi
+
+
 # Directory 01 reserved for GDMenu, start game directories with 02
 INDEX=2
 
@@ -192,7 +199,7 @@ while read GAME; do
     # See https://mc.pp.se/dc/ip0000.bin.html
     NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
     DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
-    VGA_INFO=`hexdump -v -e '"%c"' -s0x3E -n 1 $TARGET_DIR/$DIR_NAME/ip.bin`
+    VGA_INFO=`hexdump -v -e '"%c"' -s0x3D -n 1 $TARGET_DIR/$DIR_NAME/ip.bin`
     REGION_INFO=`hexdump -v -e '"%c"' -s0x30 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/[[:blank:]]*//g'`
     VERSION_INFO=`hexdump -v -e '"%c"' -s0x4A -n 6 $TARGET_DIR/$DIR_NAME/ip.bin`
     DATE_INFO=`hexdump -v -e '"%c"' -s0x50 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin`
@@ -218,7 +225,9 @@ mv gdmenu.cdi "$TARGET_DIR/01"
 cp ini/GDEMU.ini "$TARGET_DIR"
 
 # Restore backup copy of GDMenu
-mv "$TARGET_DIR/gdmenu_old" "$TARGET_DIR/01_"
+if [[ -d "$TARGET_DIR/gdmenu_old" ]]; then
+    mv "$TARGET_DIR/gdmenu_old" "$TARGET_DIR/01_"
+fi
 
 # Report any leftover dirs to the user.  Re-running the script won't be possible
 # if these exist.
@@ -226,7 +235,7 @@ LEFTOVER_DIRS=`find $TARGET_DIR -regextype sed -regex "$TARGET_DIR/*[0-9][0-9]*_
 if [[ ! -z $LEFTOVER_DIRS ]]; then
     echo -e "$STARTRED""Following directories at target directory contain old games""$ENDRED"
     for DIR in $LEFTOVER_DIRS; do
-        echo $DIR
+        echo -e "$STARTRED"$DIR"$ENDRED"
     done
-    echo -e "$STARTRED""Consider deleting them""$ENDRED"
+    echo -e "$STARTRED""Delete or move them to a different location.""$ENDRED"
 fi

@@ -158,6 +158,3 @@ by other people:
     `README-gdmenu.txt` for details.
 
   * `data/ip.bin` and `GDEMU.ini` are taken from GDEMU_SD written by MadSheep.
-    I altered the VGA byte (`0x3E` offset) in `ip.bin` to 1.  For some reason it
-    was set to 0, which seems incorrect - GDMenu works in VGA mode without
-    problems and that's what the GDMenu entry says anyway.
