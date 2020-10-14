@@ -4,10 +4,5 @@ LIST.INI*
 gdmenu.cdi
 gdmenu.iso
 
-# Test files and directories
-list.txt
-in/*
-out/*
-
 # cdi4dc
 tools/cdi4dc
