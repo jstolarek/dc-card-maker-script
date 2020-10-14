@@ -26,13 +26,6 @@
 STARTRED="\e[31m"
 ENDRED="\e[0m"
 
-if [ "$#" != 3 ]; then
-    echo "Dreamcast SD card maker script"
-    echo ""
-    echo "Usage: dc-card-maker.sh game_list.txt source_dir target_dir"
-    exit 1;
-fi
-
 # Check for required commands
 command -v genisoimage >/dev/null 2>&1 || {
     echo -e "$STARTRED""This script requires genisoimage to be present in the system. Aborting script""$ENDRED" >&2
@@ -44,6 +37,19 @@ command -v ./tools/cdi4dc >/dev/null 2>&1 || {
     echo -e "$STARTRED""See README for details.  Aborting script""$ENDRED" >&2
     exit 6
 }
+
+command -v unzip >/dev/null 2>&1 || {
+    echo -e "$STARTRED""This script requires unzip to be present in the system. Aborting script""$ENDRED" >&2
+    exit 7
+}
+
+# Process command line args
+if [ "$#" != 3 ]; then
+    echo "Dreamcast SD card maker script"
+    echo ""
+    echo "Usage: dc-card-maker.sh game_list.txt source_dir target_dir"
+    exit 1;
+fi
 
 INPUT_FILE=$1
 SOURCE_DIR=$2
