@@ -29,6 +29,8 @@ if [ "$#" != 3 ]; then
     exit 1;
 fi
 
+# TODO: test for required tools: cdi4dc, genisoimage
+
 INPUT_FILE=$1
 SOURCE_DIR=$2
 TARGET_DIR=$3
@@ -88,6 +90,8 @@ if [[ -e $GDMENU_INI ]]; then
     echo "$GDMENU_INI exists, backing up as ${GDMENU_INI}.bak"
     mv "$GDMENU_INI" "$GDMENU_INI"".bak"
 fi
+# Values here are hardcoded since we know what the ip.bin contains.  If ip.bin
+# ever gets updated this needs to be updated accordingly
 echo "[GDMENU]"          >> $GDMENU_INI
 echo "01.name=GDMENU"    >> $GDMENU_INI
 echo "01.disc=1/1"       >> $GDMENU_INI
@@ -111,7 +115,8 @@ while read GAME; do
     fi
 
     # Attempt to locate the game subdirectory in the target directory.  If it's
-    # already there just restory, don't attempt to extract it from an archive
+    # already there just restore the game by renaming the temporary directory,
+    # don't attempt to extract the game from an archive
     GAME_FOUND=false
     for EXISTING_GAME_DIR in `find $TARGET_DIR -regextype sed -regex "$TARGET_DIR/*[0-9][0-9]*_"`; do
         if [[ "$GAME" == "`cat $EXISTING_GAME_DIR/$NAME_FILE`" ]]; then
@@ -120,11 +125,11 @@ while read GAME; do
             (( INDEX++ ))
             echo "$GAME" >> "$OUTPUT_FILE"
             GAME_FOUND=true
-            break # if found don't iterate over remaining directories
+            break # if game found don't iterate over remaining directories
         fi
     done
 
-    # If game not found on card extract it from zip archive
+    # If game not found in target directory extract it from a zip archive
     if [[ $GAME_FOUND == false ]]; then
         GAME_ARCHIVE="$SOURCE_DIR/$GAME"
         GAME_TARGET_DIR="$TARGET_DIR/$DIR_NAME"
@@ -138,13 +143,16 @@ while read GAME; do
         echo "Extracting archive $GAME_ARCHIVE"
         unzip "$GAME_ARCHIVE" -d "$DIR_NAME"
 
-        # Extracting errors are fatal - stop the script
+        # Extracting errors are fatal - maybe we have no space left on the
+        # device?  Abort the script instead of wreaking havoc
         if [[ $? -ne 0 ]]; then
             echo -e "$STARTRED""Error extracting archive: $GAME_ARCHIVE""$ENDRED"
             echo -e "$STARTRED""Aborting script""$ENDRED"
             exit;
         fi
 
+        # Rename the gdi file to disc.gdi, move the extracted game to target
+        # directory, add the game to the game list
         echo "Generating $NAME_FILE"
         echo "$GAME" > "$DIR_NAME/$NAME_FILE"
         GDI_FILE=`find "$DIR_NAME" -type f -name *.gdi | head -n 1`
@@ -154,23 +162,22 @@ while read GAME; do
         echo "Moving game to target directory"
         mv "$DIR_NAME" "$TARGET_DIR"
         (( INDEX++ ))
-        echo "Adding \"$GAME\" to game_list.txt"
+        echo "Adding \"$GAME\" to $OUTPUT_FILE"
         echo "Game \"$GAME\" has been placed in directory \"$DIR_NAME\""
         echo "$GAME" >> "$OUTPUT_FILE"
     fi
 
-    # Now that the image files are in the target directory let's create a
-    # GDMenu.  Necessary information is taken from ip.bin file extracted from
-    # the gdi image
+    # Now that the image files are in the target directory let's create a GDMenu
+    # entry for the game.  Necessary information is taken from an ip.bin file
+    # extracted from the gdi image
     ./gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
+    # See https://mc.pp.se/dc/ip0000.bin.html
     NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
     DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
     VGA_INFO=`hexdump -v -e '"%c"' -s0x3E -n 1 $TARGET_DIR/$DIR_NAME/ip.bin`
     REGION_INFO=`hexdump -v -e '"%c"' -s0x30 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/[[:blank:]]*//g'`
     VERSION_INFO=`hexdump -v -e '"%c"' -s0x4A -n 6 $TARGET_DIR/$DIR_NAME/ip.bin`
     DATE_INFO=`hexdump -v -e '"%c"' -s0x50 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin`
-    rm $TARGET_DIR/$DIR_NAME/ip.bin
-
     echo "$DIR_NAME.name=$NAME_INFO"       >> $GDMENU_INI
     echo "$DIR_NAME.disc=$DISC_INFO"       >> $GDMENU_INI
     echo "$DIR_NAME.vga=$VGA_INFO"         >> $GDMENU_INI
@@ -178,6 +185,7 @@ while read GAME; do
     echo "$DIR_NAME.version=$VERSION_INFO" >> $GDMENU_INI
     echo "$DIR_NAME.date=$DATE_INFO"       >> $GDMENU_INI
     echo ""                                >> $GDMENU_INI
+    rm $TARGET_DIR/$DIR_NAME/ip.bin
 
 done < "$INPUT_FILE"
 
