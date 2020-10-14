@@ -22,6 +22,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# For error printing in red
+STARTRED="\e[31m"
+ENDRED="\e[0m"
+
 if [ "$#" != 3 ]; then
     echo "Dreamcast SD card maker script"
     echo ""
@@ -29,7 +33,17 @@ if [ "$#" != 3 ]; then
     exit 1;
 fi
 
-# TODO: test for required tools: cdi4dc, genisoimage
+# Check for required commands
+command -v genisoimage >/dev/null 2>&1 || {
+    echo -e "$STARTRED""This script requires genisoimage to be present in the system. Aborting script""$ENDRED" >&2
+    exit 5
+}
+
+command -v ./tools/cdi4dc >/dev/null 2>&1 || {
+    echo -e "$STARTRED""This script requires cdi4dc to be present in tools/directory""$ENDRED" >&2
+    echo -e "$STARTRED""See README for details.  Aborting script""$ENDRED" >&2
+    exit 6
+}
 
 INPUT_FILE=$1
 SOURCE_DIR=$2
@@ -38,10 +52,6 @@ OUTPUT_FILE=$3/game_list.txt
 GDMENU_INI=ini/LIST.INI
 NAME_FILE=archive.txt # name.txt would probably be better but it collides with
                       # MadSheep's SD card maker for Windows
-
-# For error printing in red
-STARTRED="\e[31m"
-ENDRED="\e[0m"
 
 # Basic sanity checks
 if [[ ! -f $INPUT_FILE ]]; then
@@ -64,16 +74,16 @@ fi
 # Abort the script to avoid problems and potential data loss.
 LEFTOVER_DIRS=`find $TARGET_DIR -regextype sed -regex "$TARGET_DIR/*[0-9][0-9]*_"`
 if [[ ! -z $LEFTOVER_DIRS ]]; then
-    echo -e "$STARTRED""Following directories from previous session found:""$ENDRED"
+    echo -e "$STARTRED""Following directories from previous session found:""$ENDRED" >&2
     for DIR in $LEFTOVER_DIRS; do
-        echo "$DIR"
+        echo "$DIR" >&2
     done
-    echo -e "$STARTRED""Aborting script.  Remove these directories and run the script again""$ENDRED"
+    echo -e "$STARTRED""Aborting script.  Remove these directories and run the script again""$ENDRED" >&2
     exit
 fi
 if [[ -e "$TARGET_DIR/gdmenu_old" ]]; then
-    echo -e "$STARTRED""Found $TARGET_DIR/gdmenu_old directory, which contains a backup of old GDMenu image""$ENDRED"
-    echo -e "$STARTRED""Aborting script.  Remove this directory and run the script again""$ENDRED"
+    echo -e "$STARTRED""Found $TARGET_DIR/gdmenu_old directory, which contains a backup of old GDMenu image""$ENDRED" >&2
+    echo -e "$STARTRED""Aborting script.  Remove this directory and run the script again""$ENDRED" >&2
     exit
 fi
 
@@ -153,8 +163,8 @@ while read GAME; do
         # Extracting errors are fatal - maybe we have no space left on the
         # device?  Abort the script instead of wreaking havoc
         if [[ $? -ne 0 ]]; then
-            echo -e "$STARTRED""Error extracting archive: $GAME_ARCHIVE""$ENDRED"
-            echo -e "$STARTRED""Aborting script""$ENDRED"
+            echo -e "$STARTRED""Error extracting archive: $GAME_ARCHIVE""$ENDRED" >&2
+            echo -e "$STARTRED""Aborting script""$ENDRED" >&2
             exit;
         fi
 
