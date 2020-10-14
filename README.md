@@ -9,10 +9,10 @@ GDMenu disc image with a pre-generated list of menu entries, which avoids
 scanning the SD card every time GDMenu is launched.
 
 **This script comes with no warranty of any kind, use at your own risk.** Read
-the "Usage" and "Behind the scenes" sections carefully to understand what the
-script does before using it.  I did my best to make the script safe and not
-cause any data loss *when used as intended*.  That being said, **backup data on
-your SD card before using this script**.
+the "Usage" section carefully to understand what the script does before using
+it.  I did my best to make the script safe and not cause any data loss *when
+used as intended*.  That being said, **backup data on your SD card before using
+this script**.
 
 
 Requirements
