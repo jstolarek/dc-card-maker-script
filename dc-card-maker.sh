@@ -98,17 +98,17 @@ if [[ -e $GDMENU_INI ]]; then
     mv "$GDMENU_INI" "$GDMENU_INI"".bak"
 fi
 # Values here are hardcoded since we know what the ip.bin contains.  If ip.bin
-# ever gets updated this needs to be updated accordingly
+# ever gets updated these lines need to be updated accordingly
 echo "[GDMENU]"          >> $GDMENU_INI
 echo "01.name=GDMENU"    >> $GDMENU_INI
 echo "01.disc=1/1"       >> $GDMENU_INI
-echo "01.vga=1"          >> $GDMENU_INI # differs from ip.bin !
+echo "01.vga=1"          >> $GDMENU_INI
 echo "01.region=JUE"     >> $GDMENU_INI
 echo "01.version=V0.6.0" >> $GDMENU_INI
 echo "01.date=20160812"  >> $GDMENU_INI
 echo ""                  >> $GDMENU_INI
 
-# Directory 01 reserved for GDMenu, start with 02
+# Directory 01 reserved for GDMenu, start game directories with 02
 INDEX=2
 
 while read GAME; do
