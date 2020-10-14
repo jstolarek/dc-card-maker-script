@@ -35,8 +35,10 @@ INPUT_FILE=$1
 SOURCE_DIR=$2
 TARGET_DIR=$3
 OUTPUT_FILE=$3/game_list.txt
-GDMENU_INI=LIST.INI
-NAME_FILE=archive.txt
+GDMENU_INI=ini/LIST.INI
+NAME_FILE=archive.txt # name.txt would probably be better but it collides with
+                      # MadSheep's SD card maker for Windows
+
 # For error printing in red
 STARTRED="\e[31m"
 ENDRED="\e[0m"
@@ -196,11 +198,13 @@ done < "$INPUT_FILE"
 
 # Build GDMenu cdi image and put it in 01 directory
 genisoimage -C 0,11702 -V GDMENU -G data/ip.bin -r -J -l -input-charset iso8859-1 -o gdmenu.iso data/1ST_READ.BIN $GDMENU_INI
+./tools/cdi4dc gdmenu.iso gdmenu.cdi
+rm gdmenu.iso
 mkdir "$TARGET_DIR/01"
-mv gdmenu.iso "$TARGET_DIR/01"
+mv gdmenu.cdi "$TARGET_DIR/01"
 
 # Copy default GDMenu configuration
-cp GDEMU.ini "$TARGET_DIR"
+cp ini/GDEMU.ini "$TARGET_DIR"
 
 # Report any leftover dirs to the user.  Re-running the script won't be possible
 # if these exist.
