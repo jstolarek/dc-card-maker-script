@@ -87,11 +87,6 @@ if [[ ! -z $LEFTOVER_DIRS ]]; then
     echo -e "$STARTRED""Aborting script.  Remove these directories and run the script again""$ENDRED" >&2
     exit
 fi
-if [[ -e "$TARGET_DIR/gdmenu_old" ]]; then
-    echo -e "$STARTRED""Found $TARGET_DIR/gdmenu_old directory, which contains a backup of old GDMenu image""$ENDRED" >&2
-    echo -e "$STARTRED""Aborting script.  Remove this directory and run the script again""$ENDRED" >&2
-    exit
-fi
 
 # If there are gdemu directories present in the destination derictory append
 # underscore to their names.
@@ -221,6 +216,9 @@ mv gdmenu.cdi "$TARGET_DIR/01"
 
 # Copy default GDMenu configuration
 cp ini/GDEMU.ini "$TARGET_DIR"
+
+# Restore backup copy of GDMenu
+mv "$TARGET_DIR/gdmenu_old" "$TARGET_DIR/01_"
 
 # Report any leftover dirs to the user.  Re-running the script won't be possible
 # if these exist.
