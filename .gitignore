@@ -8,3 +8,6 @@ gdmenu.iso
 list.txt
 in/*
 out/*
+
+# cdi4dc
+tools/cdi4dc
