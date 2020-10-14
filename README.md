@@ -158,3 +158,11 @@ by other people:
     `README-gdmenu.txt` for details.
 
   * `data/ip.bin` and `GDEMU.ini` are taken from GDEMU_SD written by MadSheep.
+
+
+Further reading
+===============
+
+  * [Structure of `ip.bin`](https://mc.pp.se/dc/ip0000.bin.html)
+  * [GDEMU details](https://gdemu.wordpress.com/details/gdemu-details/)
+  * [GDEMU operation](https://gdemu.wordpress.com/operation/gdemu-operation/)
