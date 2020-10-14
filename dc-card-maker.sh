@@ -39,7 +39,7 @@ GDMENU_INI=LIST.INI
 NAME_FILE=archive.txt
 # For error printing in red
 STARTRED="\e[31m"
-ENDCOLOR="\e[0m"
+ENDRED="\e[0m"
 
 # Basic sanity checks
 if [[ ! -f $INPUT_FILE ]]; then
@@ -67,6 +67,11 @@ if [[ ! -z $LEFTOVER_DIRS ]]; then
         echo "$DIR"
     done
     echo -e "$STARTRED""Aborting script.  Remove these directories and run the script again""$ENDRED"
+    exit
+fi
+if [[ -e "$TARGET_DIR/gdmenu_old" ]]; then
+    echo -e "$STARTRED""Found $TARGET_DIR/gdmenu_old directory, which contains a backup of old GDMenu image""$ENDRED"
+    echo -e "$STARTRED""Aborting script.  Remove this directory and run the script again""$ENDRED"
     exit
 fi
 
@@ -190,7 +195,7 @@ while read GAME; do
 done < "$INPUT_FILE"
 
 # Build GDMenu cdi image and put it in 01 directory
-genisoimage -C 0,11702 -V GDMENU -G ip.bin -r -J -l -input-charset iso8859-1 -o gdmenu.iso 1ST_READ.BIN $GDMENU_INI
+genisoimage -C 0,11702 -V GDMENU -G data/ip.bin -r -J -l -input-charset iso8859-1 -o gdmenu.iso data/1ST_READ.BIN $GDMENU_INI
 mkdir "$TARGET_DIR/01"
 mv gdmenu.iso "$TARGET_DIR/01"
 
