@@ -1,6 +1,6 @@
 # Various build artifacts and temporary files
 *.pyc
-LIST.INI
+LIST.INI*
 gdmenu.cdi
 gdmenu.iso
 

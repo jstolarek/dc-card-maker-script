@@ -170,7 +170,7 @@ while read GAME; do
     # Now that the image files are in the target directory let's create a GDMenu
     # entry for the game.  Necessary information is taken from an ip.bin file
     # extracted from the gdi image
-    ./gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
+    ./tools/gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
     # See https://mc.pp.se/dc/ip0000.bin.html
     NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
     DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
