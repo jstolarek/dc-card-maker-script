@@ -53,14 +53,18 @@ The `dc-card-maker.sh` script has to be invoked with three arguments
 where:
 
   * `game_list.txt` is a text file that contains a list of zip archives with
-    games to place on the SD card, one archive per line.  Games will be added
-    to GDMenu in the order specified in the file, so you can arrange the order
-    to your liking.  The easiest way to generate the file for the first time is
-    to have a single directory that contains the archives (see next bullet) and
+    games to place on the SD card, one archive per line.  Games will be added to
+    GDMenu in the order specified in the file, so you can arrange the order to
+    your liking.  The easiest way to generate the file for the first time is to
+    have a single directory that contains the archives (see next bullet) and
     list its contents to a file (`ls source_dir > game_list.txt`).  After each
     run the script places a copy of `game_list.txt` in the `target_dir` - this
     file can be later used to create an updated list when adding new games to
-    the card.
+    the card.  **IMPORTANT:** don't point this first argument to
+    `target_dir/game_list.txt`.  This will result in the script trying to read
+    the file and at the same time deleting it and writing to it.  This is a bad
+    idea.  Instead, copy the `target_dir/game_list.txt` somewhere and pass that
+    copy as the first argument.
 
   * `source_dir` is a directory that contains ZIP archives specified in
     `game_list.txt` above.  The script was designed with TOSEC archives in mind,
