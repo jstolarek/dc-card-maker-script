@@ -114,17 +114,20 @@ user mistakes.
 Custom menu entry names
 -----------------------
 
-By default the script extracts game names from the GDI images.  If you wish to
-customise menu entry names run the script, edit the `ini/LIST.INI` as desired
-and generate the `gdmenu.cdi` by manually re-running the commands at the end of
-the script:
+
+On its first run the script extracts game names from the GDI images.  Extracted
+name is placed in a `name.txt` file inside the game's directory on the SD card.
+You can edit these `name.txt` files to provide custom names to display in
+GDMenu.  For example, you might want to change all names to be displayed using
+lowercase letters, but keep the first letter of each word capitalized.  Here's
+an incantation that does that:
 
 ```
-genisoimage -C 0,11702 -V GDMENU -G data/ip.bin -r -J -l -input-charset iso8859-1 -o gdmenu.iso data/1ST_READ.BIN ini/LIST.INI
-./tools/cdi4dc gdmenu.iso gdmenu.cdi
+find target_dir -name "name.txt" -exec sed -i -e "s/[A-Z]/\L&/g; s/\b\(.\)/\u\1/g" {} \;
 ```
 
-Then copy the resulting `gdmenu.cdi` to `01/` directory on your SD memory card.
+Once you edited `name.txt` files to your liking run the script again with the
+same parameters to generate an updated GDMenu image with new names.
 
 
 Contributing guidelines

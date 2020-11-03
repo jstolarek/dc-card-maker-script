@@ -56,8 +56,8 @@ SOURCE_DIR=$2
 TARGET_DIR=$3
 OUTPUT_FILE=$3/game_list.txt
 GDMENU_INI=ini/LIST.INI
-NAME_FILE=archive.txt # name.txt would probably be better but it collides with
-                      # MadSheep's SD card maker for Windows
+ARCHIVE_FILE=archive.txt
+NAME_FILE=name.txt # collides (coincides?) with MadSheep's Windows SD card maker
 
 # Basic sanity checks
 if [[ ! -f $INPUT_FILE ]]; then
@@ -144,7 +144,7 @@ while read GAME; do
     # don't attempt to extract the game from an archive
     GAME_FOUND=false
     for EXISTING_GAME_DIR in `find $TARGET_DIR -regextype sed -regex "$TARGET_DIR/*[0-9][0-9]*_"`; do
-        if [[ "$GAME" == "`cat $EXISTING_GAME_DIR/$NAME_FILE`" ]]; then
+        if [[ "$GAME" == "`cat $EXISTING_GAME_DIR/$ARCHIVE_FILE`" ]]; then
             echo "Game \"$GAME\" located in target directory, placing it in directory \"$DIR_NAME\""
             mv "$EXISTING_GAME_DIR" "$TARGET_DIR/$DIR_NAME"
             (( INDEX++ ))
@@ -178,8 +178,8 @@ while read GAME; do
 
         # Rename the gdi file to disc.gdi, move the extracted game to target
         # directory, add the game to the game list
-        echo "Generating $NAME_FILE"
-        echo "$GAME" > "$DIR_NAME/$NAME_FILE"
+        echo "Generating $ARCHIVE_FILE"
+        echo "$GAME" > "$DIR_NAME/$ARCHIVE_FILE"
         GDI_FILE=`find "$DIR_NAME" -type f -name *.gdi | head -n 1`
         GDI_FILE=`basename "$GDI_FILE"`
         echo "Renaming GDI file \"$GDI_FILE\" to \"disc.gdi\""
@@ -194,10 +194,17 @@ while read GAME; do
 
     # Now that the image files are in the target directory let's create a GDMenu
     # entry for the game.  Necessary information is taken from an ip.bin file
-    # extracted from the gdi image
-    ./tools/gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
+    # extracted from the gdi image.  Name of the menu entry is taken from a name
+    # file.  If such file does not exist the name is also extracted from ip.bin.
+    #
     # See https://mc.pp.se/dc/ip0000.bin.html
-    NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
+    ./tools/gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
+    if [[ -e "$TARGET_DIR/$DIR_NAME/$NAME_FILE" ]]; then
+        NAME_INFO=`cat $TARGET_DIR/$DIR_NAME/$NAME_FILE | head -n 1`
+    else
+        NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
+        echo "$NAME_INFO" > "$TARGET_DIR/$DIR_NAME/$NAME_FILE"
+    fi
     DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
     VGA_INFO=`hexdump -v -e '"%c"' -s0x3D -n 1 $TARGET_DIR/$DIR_NAME/ip.bin`
     REGION_INFO=`hexdump -v -e '"%c"' -s0x30 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/[[:blank:]]*//g'`
