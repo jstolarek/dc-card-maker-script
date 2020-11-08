@@ -144,10 +144,10 @@ Contributing guidelines
 Bundled software, credits, and licenses
 =======================================
 
-`dc-card-maker.sh` is distributed under the terms of GPL2 license -- see
+`dc-card-maker.sh` is distributed under the terms of GPL2 license - see
 `licenses/LICENSE-dc-card-maker-script` file.
 
-This repo also contains the following additional software and data file created
+This repo also contains the following additional software and data files created
 by other people:
 
   * `tools/iso9660.py` was written by Barney Gale and is distributed under the
