@@ -217,6 +217,14 @@ while read GAME; do
         echo "Adding \"$GAME\" to $OUTPUT_FILE"
         echo "Game \"$GAME\" has been placed in directory \"$DIR_NAME\""
         echo "$GAME" >> "$OUTPUT_FILE"
+    else
+        # If a game was already extracted just determine whether we are dealing
+        # with GDI or CDI image.
+        if [[ ! -z `find "$TARGET_DIR/$DIR_NAME" -type f -name *.gdi | head -n 1` ]]; then
+            TYPE="gdi"
+        else
+            TYPE="cdi"
+        fi
     fi
 
     # Now that the image files are in the target directory we need to extract
