@@ -51,7 +51,7 @@ command -v unzip >/dev/null 2>&1 || {
 
 # Process command line args
 if [ "$#" != 3 ]; then
-    echo "Dreamcast SD card maker script (version 1.2)"
+    echo "Dreamcast SD card maker script (version 1.2.1)"
     echo ""
     echo "Usage: dc-card-maker.sh game_list.txt source_dir target_dir"
     exit 1;
