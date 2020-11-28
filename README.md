@@ -12,7 +12,10 @@ scanning the SD card every time GDMenu is launched.
 the "Usage" section carefully to understand what the script does before using
 it.  I did my best to make the script safe and not cause any data loss *when
 used as intended*.  That being said, **backup data on your SD card before using
-this script**.
+this script**.  If anything goes wrong the script should terminate without
+causing any data loss, but potentially leaving mess in the target directory.
+This mess is recoverable but will require some scripting on your side (or a lot
+of manual work).
 
 
 Requirements
@@ -23,22 +26,26 @@ Requirements
   * `sed`
   * `unzip`
   * `cdi4dc`
+  * `cdirip`
   * Python (to run `gditools.py` and `iso9660.py` in `tools/` directory)
 
-Script will test presence of `genisoimage`, `cdi4dc`, and `unzip` at start.
-`sed` and `hexdump` should be available by default on all Linux distributions.
+Script tests presence of `genisoimage`, `cdi4dc`, `cdirip`, and `unzip` at
+start.  `sed` and `hexdump` should be available by default on all Linux
+distributions.
 
 
-A note on `cdi4dc`
-------------------
+A note on `cdi4dc` and `cdirip`
+-------------------------------
 
-`cdi4dc` usually does not come in distribution repositories and you likely need
-to build it from sources.  Grab the sources from
-[here](https://github.com/Kazade/img4dc), compile them, and place the `cdi4dc`
-binary in the tools directory.  If you already have `cdi4dc` on your system you
-can either add a symlink to it in the `tools/` directory or edit the script to
-remove the `./tools/cdi4dc` check at the beginning and then use the system copy
-of `cdi4dc` towards the end of the script.
+`cdi4dc` and `cdirip` usually don't come in distribution repositories and you
+likely need to build them from sources.  Grab the [sources for
+`cdi4dc`](https://github.com/Kazade/img4dc) and [sources for
+`cdirip`](https://github.com/jozip/cdirip), compile them, and place the compiled
+binaries in the tools directory.  If you already have these programs on your
+system you can either add a symlink to them in the `tools/` directory or edit
+the script to remove the `./tools/cdi4dc` and `./tools/cdirip` checks at the
+beginning and then use the system copies of `cdi4dc` and `cdirip` towards the
+end of the script.
 
 
 Usage
@@ -68,10 +75,10 @@ where:
 
   * `source_dir` is a directory that contains ZIP archives specified in
     `game_list.txt` above.  The script was designed with TOSEC archives in mind,
-    but it should work with any archive that contains a GDI disc image, provided
-    the files are **not placed in a subdirectory inside the archive**.  The
-    exact name of `*.gdi` file is unimportant - the script takes care to rename
-    it appropriately.
+    but it should work with any archive that contains a GDI or CDI disc image,
+    provided the files are **not placed in a subdirectory inside the archive**.
+    The exact name of `*.gdi`/`*cdi` file is unimportant - the script takes care
+    to rename it appropriately.
 
   * `target_dir` is the destination directory where the script will place the
     extracted games and the generated GDMenu image.  This directory should be
@@ -82,8 +89,8 @@ where:
     image is placed in a numbered directory ([as required by
     GDEMU](https://gdemu.wordpress.com/details/gdemu-details/)), with directory
     `01/` being reserved for the GDMenu image.  Each game subdirectory, in
-    addition to the GDI image, contains `archive.txt` file with the name of a
-    ZIP archive from which the game was extracted.  It is important that
+    addition to the GDI/CDI image, contains `archive.txt` file with the name of
+    a ZIP archive from which the game was extracted.  It is important that
     `archive.txt` files remain unchanged - otherwise updating the card will not
     work correctly.
 
@@ -93,8 +100,8 @@ updated, allowing to add, remove, and reorder games without the need to extract
 and copy game archives again.  All you need to do is update the list of games in
 `game_list.txt` file supplied as the first parameter to the script.  You can add
 new archives to the list, as well as reorder and delete existing ones. If the
-game GDI image is already present in the target directory it will be used, with
-no additional copying being done.  Newly added games will be extracted from the
+game image is already present in the target directory it will be used, with no
+additional copying being done.  Newly added games will be extracted from the
 archives and added to the target directory.
 
 **IMPORTANT** When updating the card all numbered directories are temporarily
@@ -114,13 +121,12 @@ user mistakes.
 Custom menu entry names
 -----------------------
 
-
-On its first run the script extracts game names from the GDI images.  Extracted
-name is placed in a `name.txt` file inside the game's directory on the SD card.
-You can edit these `name.txt` files to provide custom names to display in
-GDMenu.  For example, you might want to change all names to be displayed using
-lowercase letters, but keep the first letter of each word capitalized.  Here's
-an incantation that does that:
+On its first run the script extracts game names from the GDI/CDI images.
+Extracted name is placed in a `name.txt` file inside the game's directory on the
+SD card.  You can edit these `name.txt` files to provide custom names to display
+in GDMenu.  For example, you might want to change all names to be displayed
+using lowercase letters, but keep the first letter of each word capitalized.
+Here's an incantation that does that:
 
 ```
 find target_dir -name "name.txt" -exec sed -i -e "s/[A-Z]/\L&/g; s/\b\(.\)/\u\1/g" {} \;
@@ -133,6 +139,7 @@ same parameters to generate an updated GDMenu image with new names.
 Contributing guidelines
 =======================
 
+  * make a ticket, ensure that your contribution is desired and will be accepted
   * update the documentation if needed
   * no tabs, spaces only
   * no trailing whitespaces

@@ -4,5 +4,6 @@ LIST.INI*
 gdmenu.cdi
 gdmenu.iso
 
-# cdi4dc
+# binary tools
 tools/cdi4dc
+tools/cdirip

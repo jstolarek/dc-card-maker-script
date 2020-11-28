@@ -33,7 +33,13 @@ command -v genisoimage >/dev/null 2>&1 || {
 }
 
 command -v ./tools/cdi4dc >/dev/null 2>&1 || {
-    echo -e "$STARTRED""This script requires cdi4dc to be present in tools/directory""$ENDRED" >&2
+    echo -e "$STARTRED""This script requires cdi4dc to be present in tools/ directory""$ENDRED" >&2
+    echo -e "$STARTRED""See README for details.  Aborting script""$ENDRED" >&2
+    exit 6
+}
+
+command -v ./tools/cdirip >/dev/null 2>&1 || {
+    echo -e "$STARTRED""This script requires cdirip to be present in tools/ directory""$ENDRED" >&2
     echo -e "$STARTRED""See README for details.  Aborting script""$ENDRED" >&2
     exit 6
 }
@@ -213,45 +219,40 @@ while read GAME; do
         echo "$GAME" >> "$OUTPUT_FILE"
     fi
 
-    # Now that the image files are in the target directory let's extract
-    # information required to create a GDMenu entry for the game.
+    # Now that the image files are in the target directory we need to extract
+    # information required to create a GDMenu entry for the game.  For GDI files
+    # this information is stored in an ip.bin file inside a GDI image.  See
+    # https://mc.pp.se/dc/ip0000.bin.html for more information.  For CDI files
+    # this information is stored in first 16 sectors of the last data track.  To
+    # read this information we need to extract the CDI file to a /tmp directory
+    # in order to get access to data tracks.
     if [[ $TYPE == "gdi" ]]; then
-        # In case of GDI images all the necessary information is taken from an
-        # ip.bin file extracted from the GDI image.  Name of the menu entry is
-        # taken from a name file.  If such file does not exist the name is also
-        # extracted from ip.bin.
-        #
-        # See https://mc.pp.se/dc/ip0000.bin.html
         ./tools/gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
-        if [[ -e "$TARGET_DIR/$DIR_NAME/$NAME_FILE" ]]; then
-            NAME_INFO=`cat $TARGET_DIR/$DIR_NAME/$NAME_FILE | head -n 1`
-        else
-            NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
-            echo "$NAME_INFO" > "$TARGET_DIR/$DIR_NAME/$NAME_FILE"
-        fi
-        DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
-        VGA_INFO=`hexdump -v -e '"%c"' -s0x3D -n 1 $TARGET_DIR/$DIR_NAME/ip.bin`
-        REGION_INFO=`hexdump -v -e '"%c"' -s0x30 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/[[:blank:]]*//g'`
-        VERSION_INFO=`hexdump -v -e '"%c"' -s0x4A -n 6 $TARGET_DIR/$DIR_NAME/ip.bin`
-        DATE_INFO=`hexdump -v -e '"%c"' -s0x50 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin`
-        rm $TARGET_DIR/$DIR_NAME/ip.bin
+        METADATA_FILE="$TARGET_DIR/$DIR_NAME/ip.bin"
     else
-        # For CDI images things are a bit more complicated.  I have no idea
-        # whether the required meta-data can be extracted from a CDI image.
-        # Therefore we use hardcoded bogus information.  This isn't perfect but
-        # it gets the job done.  Entry name is created by dropping zip extension
-        # from the archive name, unless name file `name.txt` is present.
-        if [[ -e "$TARGET_DIR/$DIR_NAME/$NAME_FILE" ]]; then
-            NAME_INFO=`cat $TARGET_DIR/$DIR_NAME/$NAME_FILE | head -n 1`
-        else
-            NAME_INFO=`echo ${GAME%.*}`
-            echo "$NAME_INFO" > "$TARGET_DIR/$DIR_NAME/$NAME_FILE"
-        fi
-        DISC_INFO="1/1"
-        VGA_INFO="1"
-        REGION_INFO="JUE"
-        VERSION_INFO="V1.000"
-        DATE_INFO="19981127"  # DC release date, because why not
+        TMP_DIR=`mktemp -d -t dc-card-maker-XXXXX`
+        ./tools/cdirip "$TARGET_DIR/$DIR_NAME/disc.cdi" $TMP_DIR
+        # Note: this is potentially fragile
+        METADATA_FILE=`find $TMP_DIR -type f -name *.iso | sort | tail -n 1`
+    fi
+
+    # Get the metadata
+    if [[ -e "$TARGET_DIR/$DIR_NAME/$NAME_FILE" ]]; then
+        NAME_INFO=`cat $TARGET_DIR/$DIR_NAME/$NAME_FILE | head -n 1`
+    else
+        NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $METADATA_FILE | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
+        echo "$NAME_INFO" > "$TARGET_DIR/$DIR_NAME/$NAME_FILE"
+    fi
+    DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $METADATA_FILE`
+    VGA_INFO=`hexdump -v -e '"%c"' -s0x3D -n 1 $METADATA_FILE`
+    REGION_INFO=`hexdump -v -e '"%c"' -s0x30 -n 8 $METADATA_FILE | sed 's/[[:blank:]]*//g'`
+    VERSION_INFO=`hexdump -v -e '"%c"' -s0x4A -n 6 $METADATA_FILE`
+    DATE_INFO=`hexdump -v -e '"%c"' -s0x50 -n 8 $METADATA_FILE`
+
+    # Remove metadata files
+    rm "$METADATA_FILE"
+    if [[ $TYPE == "cdi" ]]; then
+        rm -rf $TMP_DIR
     fi
 
     # Write menu entry data to INI file
