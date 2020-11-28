@@ -111,7 +111,7 @@ fi
 # Values here are hardcoded since we know what the ip.bin contains.  If ip.bin
 # ever gets updated these lines need to be updated accordingly
 echo "[GDMENU]"          >> $GDMENU_INI
-echo "01.name=GDMENU"    >> $GDMENU_INI
+echo "01.name=GDMenu"    >> $GDMENU_INI
 echo "01.disc=1/1"       >> $GDMENU_INI
 echo "01.vga=1"          >> $GDMENU_INI
 echo "01.region=JUE"     >> $GDMENU_INI
@@ -176,40 +176,85 @@ while read GAME; do
             exit;
         fi
 
-        # Rename the gdi file to disc.gdi, move the extracted game to target
-        # directory, add the game to the game list
+        # Determine whether we are dealing with GDI or CDI image.
+        DISC_FILE=`find "$DIR_NAME" -type f -name *.gdi | head -n 1`
+        if [[ ! -z $DISC_FILE ]]; then
+            TYPE="gdi"
+        else
+            DISC_FILE=`find "$DIR_NAME" -type f -name *.cdi | head -n 1`
+            TYPE="cdi"
+        fi
+
+        # If we didn't find a GDI or CDI image inside the extracted archive we
+        # skip it.  This isn't perfect since the error message might get lost in
+        # the output noise, leading to perception that everything went fine when
+        # it actually didn't.  But aborting the script in the middle of
+        # execution can potentially cause mess so skipping seems like a better
+        # solution.
+        if [[ -z $DISC_FILE ]]; then
+            echo -e "$STARTRED""Couldn't find any GDI or CDI file in $GAME_ARCHIVE""$ENDRED" >&2
+            echo -e "$STARTRED""Skipping""$ENDRED" >&2
+            break
+        fi
+
+        DISC_FILE=`basename "$DISC_FILE"`
+        # Rename the gdi/cdi file to disc.gdi/disc.cdi, move the extracted game
+        # to target directory, add the game to the game list
         echo "Generating $ARCHIVE_FILE"
         echo "$GAME" > "$DIR_NAME/$ARCHIVE_FILE"
-        GDI_FILE=`find "$DIR_NAME" -type f -name *.gdi | head -n 1`
-        GDI_FILE=`basename "$GDI_FILE"`
-        echo "Renaming GDI file \"$GDI_FILE\" to \"disc.gdi\""
-        mv "$DIR_NAME/$GDI_FILE" "$DIR_NAME/disc.gdi"
+        echo "Renaming disc file \"$DISC_FILE\" to \"disc.$TYPE\""
+        # If moving files goes wrong abort immediately
+        mv "$DIR_NAME/$DISC_FILE" "$DIR_NAME/disc.$TYPE" || exit
         echo "Moving game to target directory"
-        mv "$DIR_NAME" "$TARGET_DIR"
+        mv "$DIR_NAME" "$TARGET_DIR" || exit
         (( INDEX++ ))
         echo "Adding \"$GAME\" to $OUTPUT_FILE"
         echo "Game \"$GAME\" has been placed in directory \"$DIR_NAME\""
         echo "$GAME" >> "$OUTPUT_FILE"
     fi
 
-    # Now that the image files are in the target directory let's create a GDMenu
-    # entry for the game.  Necessary information is taken from an ip.bin file
-    # extracted from the gdi image.  Name of the menu entry is taken from a name
-    # file.  If such file does not exist the name is also extracted from ip.bin.
-    #
-    # See https://mc.pp.se/dc/ip0000.bin.html
-    ./tools/gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
-    if [[ -e "$TARGET_DIR/$DIR_NAME/$NAME_FILE" ]]; then
-        NAME_INFO=`cat $TARGET_DIR/$DIR_NAME/$NAME_FILE | head -n 1`
+    # Now that the image files are in the target directory let's extract
+    # information required to create a GDMenu entry for the game.
+    if [[ $TYPE == "gdi" ]]; then
+        # In case of GDI images all the necessary information is taken from an
+        # ip.bin file extracted from the GDI image.  Name of the menu entry is
+        # taken from a name file.  If such file does not exist the name is also
+        # extracted from ip.bin.
+        #
+        # See https://mc.pp.se/dc/ip0000.bin.html
+        ./tools/gditools.py -i "$TARGET_DIR/$DIR_NAME/disc.gdi" -b ip.bin
+        if [[ -e "$TARGET_DIR/$DIR_NAME/$NAME_FILE" ]]; then
+            NAME_INFO=`cat $TARGET_DIR/$DIR_NAME/$NAME_FILE | head -n 1`
+        else
+            NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
+            echo "$NAME_INFO" > "$TARGET_DIR/$DIR_NAME/$NAME_FILE"
+        fi
+        DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
+        VGA_INFO=`hexdump -v -e '"%c"' -s0x3D -n 1 $TARGET_DIR/$DIR_NAME/ip.bin`
+        REGION_INFO=`hexdump -v -e '"%c"' -s0x30 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/[[:blank:]]*//g'`
+        VERSION_INFO=`hexdump -v -e '"%c"' -s0x4A -n 6 $TARGET_DIR/$DIR_NAME/ip.bin`
+        DATE_INFO=`hexdump -v -e '"%c"' -s0x50 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin`
+        rm $TARGET_DIR/$DIR_NAME/ip.bin
     else
-        NAME_INFO=`hexdump -v -e '"%c"' -s0x80 -n 128 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/^[[:blank:]]*//;s/[[:blank:]]*$//'`
-        echo "$NAME_INFO" > "$TARGET_DIR/$DIR_NAME/$NAME_FILE"
+        # For CDI images things are a bit more complicated.  I have no idea
+        # whether the required meta-data can be extracted from a CDI image.
+        # Therefore we use hardcoded bogus information.  This isn't perfect but
+        # it gets the job done.  Entry name is created by dropping zip extension
+        # from the archive name, unless name file `name.txt` is present.
+        if [[ -e "$TARGET_DIR/$DIR_NAME/$NAME_FILE" ]]; then
+            NAME_INFO=`cat $TARGET_DIR/$DIR_NAME/$NAME_FILE | head -n 1`
+        else
+            NAME_INFO=`echo ${GAME%.*}`
+            echo "$NAME_INFO" > "$TARGET_DIR/$DIR_NAME/$NAME_FILE"
+        fi
+        DISC_INFO="1/1"
+        VGA_INFO="1"
+        REGION_INFO="JUE"
+        VERSION_INFO="V1.000"
+        DATE_INFO="19981127"  # DC release date, because why not
     fi
-    DISC_INFO=`hexdump -v -e '"%c"' -s0x2B -n 3 $TARGET_DIR/$DIR_NAME/ip.bin`
-    VGA_INFO=`hexdump -v -e '"%c"' -s0x3D -n 1 $TARGET_DIR/$DIR_NAME/ip.bin`
-    REGION_INFO=`hexdump -v -e '"%c"' -s0x30 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin | sed 's/[[:blank:]]*//g'`
-    VERSION_INFO=`hexdump -v -e '"%c"' -s0x4A -n 6 $TARGET_DIR/$DIR_NAME/ip.bin`
-    DATE_INFO=`hexdump -v -e '"%c"' -s0x50 -n 8 $TARGET_DIR/$DIR_NAME/ip.bin`
+
+    # Write menu entry data to INI file
     echo "$DIR_NAME.name=$NAME_INFO"       >> $GDMENU_INI
     echo "$DIR_NAME.disc=$DISC_INFO"       >> $GDMENU_INI
     echo "$DIR_NAME.vga=$VGA_INFO"         >> $GDMENU_INI
@@ -217,7 +262,6 @@ while read GAME; do
     echo "$DIR_NAME.version=$VERSION_INFO" >> $GDMENU_INI
     echo "$DIR_NAME.date=$DATE_INFO"       >> $GDMENU_INI
     echo ""                                >> $GDMENU_INI
-    rm $TARGET_DIR/$DIR_NAME/ip.bin
 
 done < "$INPUT_FILE"
 
