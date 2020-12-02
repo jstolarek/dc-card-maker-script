@@ -208,11 +208,12 @@ while read GAME; do
         # to target directory, add the game to the game list
         echo "Generating $ARCHIVE_FILE"
         echo "$GAME" > "$DIR_NAME/$ARCHIVE_FILE"
-        # If moving files goes wrong abort immediately
         if [[ ! -e "$DIR_NAME/disc.$TYPE" ]]; then
             echo "Renaming disc file \"$DISC_FILE\" to \"disc.$TYPE\""
-            mv "$DIR_NAME/$DISC_FILE" "$DIR_NAME/disc.$TYPE" || exit
+            mv "$DIR_NAME/$DISC_FILE" "$DIR_NAME/disc.$TYPE"
         fi
+        # If moving files goes wrong abort immediately - we might be out of
+        # space on the SD card
         echo "Moving game to target directory"
         mv "$DIR_NAME" "$TARGET_DIR" || exit
         (( INDEX++ ))
