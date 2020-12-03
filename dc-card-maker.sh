@@ -243,7 +243,8 @@ while read GAME; do
     else
         TMP_DIR=`mktemp -d -t dc-card-maker-XXXXX`
         ./tools/cdirip "$TARGET_DIR/$DIR_NAME/disc.cdi" $TMP_DIR
-        # Note: this is potentially fragile
+        # Note: this is potentially fragile, assumes data tracks have *.iso
+        # extension
         METADATA_FILE=`find $TMP_DIR -type f -name *.iso | sort | tail -n 1`
     fi
 
