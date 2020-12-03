@@ -284,6 +284,7 @@ while read GAME; do
 done < "$INPUT_FILE"
 
 # Build GDMenu cdi image and put it in 01 directory
+echo "Building GDMenu disc image"
 genisoimage -C 0,11702 -V GDMENU -G data/ip.bin -r -J -l -input-charset iso8859-1 -o gdmenu.iso data/1ST_READ.BIN $GDMENU_INI
 ./tools/cdi4dc gdmenu.iso gdmenu.cdi
 rm gdmenu.iso
@@ -291,6 +292,7 @@ mkdir "$TARGET_DIR/01"
 mv gdmenu.cdi "$TARGET_DIR/01"
 
 # Copy default GDMenu configuration
+echo "Copying GDEMU configuration"
 cp ini/GDEMU.ini "$TARGET_DIR"
 
 # Restore backup copy of GDMenu
