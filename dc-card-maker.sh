@@ -131,9 +131,13 @@ if [[ -e $OUTPUT_FILE ]]; then
     mv "$OUTPUT_FILE" "$OUTPUT_FILE"".bak"
 fi
 
+# Temporary directory for extracting zip archives
+TMP_UNZIP_DIR=`mktemp -d -t dc-card-maker-XXXXX`
+echo "Created temporary directory for extracting archives: $TMP_UNZIP_DIR"
 
 # Directory 01 reserved for GDMenu, start game directories with 02
 INDEX=2
+
 
 while read GAME; do
     echo "Processing game \"$GAME\""
@@ -164,6 +168,7 @@ while read GAME; do
     if [[ $GAME_FOUND == false ]]; then
         GAME_ARCHIVE="$SOURCE_DIR/$GAME"
         GAME_TARGET_DIR="$TARGET_DIR/$DIR_NAME"
+        GAME_TMP_DIR="$TMP_UNZIP_DIR/$DIR_NAME"
 
         # Missing archives are not considered fatal, just skip the game
         if [[ ! -f "$GAME_ARCHIVE" ]]; then
@@ -171,8 +176,8 @@ while read GAME; do
             break
         fi
 
-        echo "Extracting archive $GAME_ARCHIVE"
-        unzip "$GAME_ARCHIVE" -d "$DIR_NAME"
+        echo "Extracting archive $GAME_ARCHIVE to temporary directory $GAME_TMP_DIR"
+        unzip "$GAME_ARCHIVE" -d "$GAME_TMP_DIR"
 
         # Extracting errors are fatal - maybe we have no space left on the
         # device?  Abort the script instead of wreaking havoc
@@ -183,11 +188,11 @@ while read GAME; do
         fi
 
         # Determine whether we are dealing with GDI or CDI image.
-        DISC_FILE=`find "$DIR_NAME" -type f -name *.gdi | head -n 1`
+        DISC_FILE=`find "$GAME_TMP_DIR" -type f -name *.gdi | head -n 1`
         if [[ ! -z $DISC_FILE ]]; then
             TYPE="gdi"
         else
-            DISC_FILE=`find "$DIR_NAME" -type f -name *.cdi | head -n 1`
+            DISC_FILE=`find "$GAME_TMP_DIR" -type f -name *.cdi | head -n 1`
             TYPE="cdi"
         fi
 
@@ -206,16 +211,16 @@ while read GAME; do
         DISC_FILE=`basename "$DISC_FILE"`
         # Rename the gdi/cdi file to disc.gdi/disc.cdi, move the extracted game
         # to target directory, add the game to the game list
-        echo "Generating $ARCHIVE_FILE"
-        echo "$GAME" > "$DIR_NAME/$ARCHIVE_FILE"
-        if [[ ! -e "$DIR_NAME/disc.$TYPE" ]]; then
+        echo "Writing $ARCHIVE_FILE"
+        echo "$GAME" > "$GAME_TMP_DIR/$ARCHIVE_FILE"
+        if [[ ! -e "$GAME_TMP_DIR/disc.$TYPE" ]]; then
             echo "Renaming disc file \"$DISC_FILE\" to \"disc.$TYPE\""
-            mv "$DIR_NAME/$DISC_FILE" "$DIR_NAME/disc.$TYPE"
+            mv "$GAME_TMP_DIR/$DISC_FILE" "$GAME_TMP_DIR/disc.$TYPE"
         fi
         # If moving files goes wrong abort immediately - we might be out of
         # space on the SD card
-        echo "Moving game to target directory"
-        mv "$DIR_NAME" "$TARGET_DIR" || exit
+        echo "Moving game from temporary directory to target directory"
+        mv "$GAME_TMP_DIR" "$TARGET_DIR" || exit
         (( INDEX++ ))
         echo "Adding \"$GAME\" to $OUTPUT_FILE"
         echo "Game \"$GAME\" has been placed in directory \"$DIR_NAME\""
@@ -292,6 +297,9 @@ cp ini/GDEMU.ini "$TARGET_DIR"
 if [[ -d "$TARGET_DIR/gdmenu_old" ]]; then
     mv "$TARGET_DIR/gdmenu_old" "$TARGET_DIR/01_"
 fi
+
+# Remove temporary direcotry
+rmdir "$TMP_UNZIP_DIR"
 
 # Report any leftover dirs to the user.  Re-running the script won't be possible
 # if these exist.
