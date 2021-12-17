@@ -27,7 +27,7 @@ Requirements
   * `unzip`
   * `cdi4dc`
   * `cdirip`
-  * Python (to run `gditools.py` and `iso9660.py` in `tools/` directory)
+  * Python 3 (to run `gditools.py` and `iso9660.py` in `tools/` directory)
 
 Script tests presence of `genisoimage`, `cdi4dc`, `cdirip`, and `unzip` at
 start.  `sed` and `hexdump` should be available by default on all Linux
@@ -159,12 +159,14 @@ by other people:
 
   * `tools/iso9660.py` was written by Barney Gale and is distributed under the
     terms of MIT license.  See `licenses/LICENSE-iso9660`.  Original repository:
-    https://github.com/barneygale/iso9660
+    <https://github.com/barneygale/iso9660>.  Ported to Python 3 by HaydenKow:
+    <https://gitlab.com/HaydenKow/dcisotools-py3>
 
   * `tools/gditools.py` is taken from `gditools` library written by FamilyGuy,
     and is distributed under the terms of GPL3 license.  See
     `licenses/LICENSE-gditools` file.  Original repository:
-    https://sourceforge.net/projects/dcisotools/
+    <https://sourceforge.net/projects/dcisotools/>.  Ported to Python 3 by
+    HaydenKow: <https://gitlab.com/HaydenKow/dcisotools-py3>
 
   * `data/1ST_READ.BIN` contains a binary image of GDMenu written by neuroacid.
     Exact license unknown, but this binary has been released to the public by
