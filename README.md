@@ -1,3 +1,9 @@
+Archival notice
+===============
+
+This project is now [hosted on
+Codeberg](https://codeberg.org/jstolarek/dc-card-maker-script).
+
 Dreamcast GDMenu maker script for Linux
 =======================================
 
